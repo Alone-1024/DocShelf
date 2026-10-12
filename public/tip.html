@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+<title>请作者喝杯咖啡 · DocShelf</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* style.css 里 body 是应用外壳（100vh + overflow:hidden + flex），
+     直接继承过来会让收款页在矮窗口下被裁掉且滚不动，这里全部改回普通文档 */
+  html { height: auto; }
+  body {
+    display: block; height: auto; overflow: visible;
+    max-width: 1000px; margin: 0 auto; padding: 32px 20px 48px;
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  .lead { color: var(--muted); font-size: 15px; line-height: 1.8; margin: 0 0 26px; }
+  .codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+  .codes figure {
+    margin: 0; padding: 18px 14px; text-align: center;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+  }
+  .codes img { width: 100%; max-width: 360px; height: auto; border-radius: 8px; background: #fff; }
+  .codes figcaption { margin-top: 10px; font-size: 13px; font-weight: 600; }
+  .codes figcaption em { display: block; margin-top: 2px; font-style: normal; font-size: 12px; color: var(--muted); }
+  .foot { margin-top: 26px; font-size: 12.5px; color: var(--muted); line-height: 1.8; }
+  .back { display: inline-block; margin-top: 8px; font-size: 13px; color: var(--accent); text-decoration: none; }
+  .back:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <h1>💰 请作者喝杯咖啡</h1>
+  <p class="lead">
+    DocShelf 是一个纯本地的文档索引工具：平时不联网、无广告、不收费，文件始终留在你自己的电脑上。
+    如果它帮你省下了整理文档的时间，可以扫下面任意一张码表示一下心意，金额随意。
+  </p>
+
+  <div class="codes">
+    <figure>
+      <img src="tip/wechat.png" alt="微信收款码（尚未放置：把 wechat.png 放进 public/tip/ 目录）" width="240" height="240">
+      <figcaption>微信打赏<em>微信扫一扫</em></figcaption>
+    </figure>
+    <figure>
+      <img src="tip/alipay.png" alt="支付宝收款码（尚未放置：把 alipay.png 放进 public/tip/ 目录）" width="240" height="240">
+      <figcaption>支付宝打赏<em>支付宝扫一扫</em></figcaption>
+    </figure>
+  </div>
+
+  <p class="foot">
+    打赏完全自愿，不影响任何功能，也不提供任何兑换。
+  </p>
+  <a class="back" href="index.html">← 回到 DocShelf</a>
+</body>
+</html>

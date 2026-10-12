@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self'; worker-src 'self' blob:">
+  <meta name="theme-color" content="#2540be">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <title>DocShelf</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <button id="btnSidebarToggle" class="ghost" title="折叠/展开侧栏">☰</button>
+      <img class="brand" src="app-icon.png" alt="">
+      <h1>DocShelf</h1>
+    </div>
+    <div class="header-drag"></div>
+  </header>
+
+  <main>
+    <aside id="sidebar">
+      <button id="btnAddCat" class="side-add" title="只在索引里分组，不会在磁盘上建文件夹">＋ 新建大分类</button>
+      <div id="catTree"></div>
+      <div class="side-actions">
+        <button id="btnToolbox" title="PDF 合并/分割/旋转、图片转 PDF、PDF 转图片"><span class="si-ico">🧰</span>工具箱</button>
+        <button id="btnTheme" title="切换界面配色"><span class="si-ico">🎨</span>主题</button>
+        <button id="btnTip" title="如果这个工具帮到了你，可以请作者喝杯咖啡"><span class="si-ico">💰</span>打赏</button>
+      </div>
+      <button id="btnManual" class="side-btn" title="怎么用、能预览什么、数据存在哪"><span class="si-ico">📖</span>操作手册</button>
+      <button id="btnFeedback" class="side-btn" title="问题反馈、功能建议都发作者邮箱"><span class="si-ico">✉️</span>反馈</button>
+      <button id="btnAbout" title="程序版本、放在哪个文件夹、记了多少文件">?</button>
+    </aside>
+
+    <section id="fileArea">
+      <div class="file-toolbar">
+        <h2 id="areaTitle">全部文件</h2>
+        <div class="view-switch" id="viewSwitch">
+          <button data-view="grid" title="小图标">⊞</button>
+          <button data-view="list" title="列表">☰</button>
+          <button data-view="detail" title="详细信息">▤</button>
+        </div>
+        <select id="sortSelect" title="排序方式">
+          <option value="name:asc">名称 A→Z</option>
+          <option value="name:desc">名称 Z→A</option>
+          <option value="time:desc">上传时间 新→旧</option>
+          <option value="time:asc">上传时间 旧→新</option>
+        </select>
+        <input id="searchBox" type="search" placeholder="搜索文件名…">
+        <button id="btnDropUpload" class="primary" title="选择文件后按源路径登记，不复制">＋ 登记文件</button>
+        <input id="filePicker" type="file" multiple hidden>
+      </div>
+      <div id="bulkBar" class="bulk-bar hidden">
+        已选 <b id="bulkCount">0</b> 个
+        <button id="btnSelectAll" title="选中当前分类/搜索结果的全部文件（跨页）">全选</button>
+        <button id="btnBulkMove">🔄 批量移动</button>
+        <button id="btnBulkDelete" class="danger">🗑 批量删除</button>
+        <button id="btnBulkCancel" class="ghost">取消选择</button>
+      </div>
+      <div id="fileList" class="file-list"></div>
+      <div id="emptyHint" class="empty-hint hidden">
+        <img src="app-icon.png" alt="" width="72" height="72">
+        <p>还没有文件</p>
+        <p>把文件拖到页面任意位置即可按源路径登记，会自动按扩展名归入对应大分类</p>
+      </div>
+    </section>
+
+    <div id="paneResizer" class="pane-resizer hidden" title="拖动调整面板宽度"></div>
+    <section id="previewPane" class="hidden">
+      <div class="preview-head">
+        <div class="preview-actions">
+          <button id="btnOpen" title="用电脑默认程序打开">💻 电脑打开</button>
+          <button id="btnReveal" title="在资源管理器中定位">📍 定位文件</button>
+          <button id="btnMove">🔄 移动</button>
+          <button id="btnDelete" class="danger">🗑 删除</button>
+          <button id="btnClosePreview" class="ghost">✕</button>
+        </div>
+      </div>
+      <div id="previewBody" class="preview-body"></div>
+    </section>
+  </main>
+
+  <!-- 拖拽上传遮罩 -->
+  <div id="dropOverlay" class="drop-overlay hidden">
+    <div class="drop-inner">
+      <div class="drop-icon">⬆</div>
+      <p>松开鼠标，登记到 <b id="dropTarget">自动分类</b></p>
+      <small>按源文件路径登记（不复制）；若拿不到源路径，会提示改用「＋ 登记文件」按钮</small>
+    </div>
+  </div>
+
+  <!-- 弹窗 -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <h3 id="modalTitle"></h3>
+      <div id="modalBody"></div>
+      <div class="modal-foot">
+        <button id="modalCancel" class="ghost">取消</button>
+        <button id="modalOk" class="primary">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="app.js"></script>
+</body>
+</html>

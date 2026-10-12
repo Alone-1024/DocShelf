@@ -1,0 +1,7 @@
+node_modules/
+release*/
+发布/
+index.json
+index.json.bak
+index.json.broken-*
+*.log
