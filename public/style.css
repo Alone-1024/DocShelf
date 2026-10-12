@@ -407,6 +407,8 @@ main {
 .about-up b { color: var(--text); }
 .about-up a { color: var(--accent); }
 .about-up em { display: block; font-style: normal; font-size: 12px; }
+.about-license { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); line-height: 1.7; }
+.about-license a { color: var(--accent); }
 
 /* ---------- 操作手册弹窗（左目录 + 右正文 + 搜索） ---------- */
 .modal-box:has(.manual-doc) { width: 800px; max-width: 94vw; }

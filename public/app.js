@@ -805,6 +805,7 @@ function openAbout() {
        <button type="button" class="about-fb">✉️ 发给作者</button>
      </div>
      <p class="about-up"></p>
+     <p class="about-license">DocShelf 是开源软件，遵循 Apache License 2.0 条款，不收费、无广告。<a href="https://github.com/Alone-1024/DocShelf" target="_blank" rel="noopener">看看它的来历和条款</a></p>
      <div class="modal-hint">找作者问问题时带上这几行——他看不到你的电脑，全靠这些判断问题出在哪。</div>`,
     () => true, '关闭');
   $('.about-copy').onclick = () => copyText(aboutRows().map(([k, v]) => `${k}：${v}`).join('\n'), '程序信息已复制');

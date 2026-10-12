@@ -233,11 +233,14 @@ app.post('/api/register', (req, res) => {
 });
 
 // 拖拽时浏览器拿不到 file:/// URI 的兜底：按 名称+大小+修改时间 在常用目录反查源文件
+// 中文系统里这些文件夹的显示名是本地化的，两种写法都列上；不存在的目录 readdir 会抛错并被忽略
 const LOCATE_DIRS = [
   path.join(os.homedir(), 'Desktop'),
   path.join(os.homedir(), 'Downloads'),
   path.join(os.homedir(), 'Documents'),
-  'D:\\桌面',
+  path.join(os.homedir(), '桌面'),
+  path.join(os.homedir(), '下载'),
+  path.join(os.homedir(), '文档'),
 ];
 const LOCATE_SKIP = new Set(['node_modules', '.git', '$RECYCLE.BIN', 'AppData', 'SystemVolumeInformation']);
 
