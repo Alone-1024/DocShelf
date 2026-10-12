@@ -95,10 +95,16 @@ function confirmBox(title, message, okText = '删除') {
 }
 
 /* ---------- 数据加载 ---------- */
+let bootWarnShown = false;
 async function load() {
   const data = await api('/api/state');
   state.categories = data.categories;
   state.meta = data.meta || null;
+  if (state.meta?.bootWarn && !bootWarnShown) {
+    // 记录存不下来的程序等于白干，值得弹窗说一次，不能只靠 2.5 秒的提示条
+    bootWarnShown = true;
+    openModal('⚠️ 记录存不下来', `<p class="modal-hint">${escapeHtml(state.meta.bootWarn)}</p>`, () => true, '知道了');
+  }
   const aliveIds = new Set(data.categories.flatMap(c => c.subs.flatMap(s => s.files.map(f => f.id))));
   state.selectedIds = new Set([...state.selectedIds].filter(id => aliveIds.has(id)));
   updateBulkBar();
@@ -781,6 +787,7 @@ function aboutRows() {
     ['记了多少文件', `${m.files ?? 0} 个`],
     ['分了几个大类', `${state.categories.length} 个`],
     ['怎么运行的', m.packaged ? '双击程序文件打开' : '开发调试（源码运行）'],
+    ...(m.bootWarn ? [['记录存不下来', m.bootWarn]] : []),
   ];
 }
 
@@ -824,7 +831,8 @@ function openAbout() {
       else if (!r.version || verCmp(r.version, cur) <= 0) up.textContent = `这已经是最新版了（${cur}）`;
       else if (!/^https:\/\//i.test(r.url || '')) up.textContent = `有新版 ${r.version}，但下载地址打不开，请写信问作者`;
       else up.innerHTML = `有新版 <b>${escapeHtml(r.version)}</b>（${escapeHtml(r.date || '')}）　` +
-        `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">⬇ 去下载新的安装包</a><em>装上就行，你登记的东西不会丢</em>`;
+        `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">⬇ 去下载新的安装包</a><em>装上就行，你登记的东西不会丢</em>` +
+        (r.notes ? `<div class="modal-hint">${escapeHtml(r.notes)}</div>` : '');
     } catch (e) {
       up.textContent = e.message;
     }
@@ -1247,14 +1255,22 @@ function syncTbOutput(tool) {
   if (name && (!name.value.trim() || name.value === '转换结果')) name.value = defaultOutName(tool);
 }
 
+// 用过的输出目录：localStorage 里的值被写坏时不能连工具箱都打不开，兜底成空列表
+function recentDirs() {
+  try {
+    const v = JSON.parse(localStorage.getItem('tbDirs') || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch { return []; }
+}
+
 function defaultOutDir() {
   const first = tb.files[0];
   if (first) return parentDir(first.absPath);
-  return JSON.parse(localStorage.getItem('tbDirs') || '[]')[0] || '';
+  return recentDirs()[0] || '';
 }
 
 function outputHtml(tool) {
-  const dirs = JSON.parse(localStorage.getItem('tbDirs') || '[]');
+  const dirs = recentDirs();
   const quick = [...new Set([defaultOutDir(), ...dirs])].filter(Boolean).slice(0, 5);
   return `<div class="tool-group-title">输出</div>
     <div class="tb-row"><label>保存目录</label><input id="oDir" value="${escapeHtml(defaultOutDir())}">
@@ -1401,7 +1417,7 @@ async function runTool() {
 }
 
 function rememberDir(dir) {
-  const list = [...new Set([dir, ...JSON.parse(localStorage.getItem('tbDirs') || '[]')])].slice(0, 5);
+  const list = [...new Set([dir, ...recentDirs()])].slice(0, 5);
   localStorage.setItem('tbDirs', JSON.stringify(list));
 }
 

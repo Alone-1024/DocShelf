@@ -335,7 +335,13 @@ function createToolbox(ctx) {
     try { st = fs.statSync(p); } catch { return res.status(404).json({ error: '文件不存在' }); }
     if (!st.isFile()) return res.status(400).json({ error: '这不是文件' });
     res.type(type);
-    fs.createReadStream(p).pipe(res);
+    // 同 server.js 的预览接口：error 没人接就是未捕获异常，整个程序跟着没
+    const stream = fs.createReadStream(p);
+    stream.on('error', () => {
+      if (res.headersSent) res.destroy();
+      else res.status(500).json({ error: '这个文件现在读不了，可能被别的程序占着' });
+    });
+    stream.pipe(res);
   });
   return router;
 }

@@ -56,16 +56,28 @@ electronApp.whenReady().then(async () => {
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
+      // 页面脚本和 preload 彻底隔开；preload 只用 contextBridge/webUtils，沙箱下也够用
+      sandbox: true,
       // 页面靠它问出文件的真实路径，缺了这个就只能反查常用目录，C 盘/其他目录会登不上
       preload: path.join(__dirname, 'preload.cjs'),
     },
   });
   win.loadURL(url);
 
+  // 只放行网页链接和写信链接：file: 之类的交给系统等于让页面随便开本地程序
+  const isSafeExternal = t => /^https?:\/\//i.test(t) || /^mailto:/i.test(t);
+
+  // 主窗口一旦被导航到外站，preload 照样会注入那个页面，它就能读到任意文件的真实路径
+  win.webContents.on('will-navigate', (e, target) => {
+    if (target.startsWith(url)) return; // 站内跳转（含重新加载）不动
+    e.preventDefault();
+    if (isSafeExternal(target)) shell.openExternal(target);
+  });
+
   // 预览用 window.open 在新窗口打开；外部链接交给系统浏览器
   win.webContents.setWindowOpenHandler(({ url: target }) => {
     if (!target.startsWith(url)) {
-      shell.openExternal(target);
+      if (isSafeExternal(target)) shell.openExternal(target);
       return { action: 'deny' };
     }
     // 收款页要两张码并排看清，用主窗口那套尺寸和「无菜单栏」，别用 800x600 默认值

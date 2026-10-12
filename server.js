@@ -17,7 +17,7 @@ const PKG = (() => {
 const ROOT = process.env.DOCS_ROOT || __dirname;
 const INDEX_FILE = path.join(ROOT, 'index.json');
 
-fs.mkdirSync(ROOT, { recursive: true });
+try { fs.mkdirSync(ROOT, { recursive: true }); } catch (e) { console.error('数据目录建不出来:', e.message); }
 
 const DEFAULT_CATEGORIES = [
   { name: 'PDF', exts: ['pdf'] },
@@ -46,9 +46,14 @@ function loadIndex() {
 function saveIndex(idx) {
   // 先写临时文件再改名替换：万一写一半断电/被杀，index.json 本体还是完整可读的
   const tmp = `${INDEX_FILE}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(idx, null, 2), 'utf8');
-  try { if (fs.existsSync(INDEX_FILE)) fs.copyFileSync(INDEX_FILE, `${INDEX_FILE}.bak`); } catch { /* 备份失败不影响保存 */ }
-  fs.renameSync(tmp, INDEX_FILE);
+  // 写不进去时换成一句人话：默认的 500 处理会把 EPERM 和临时文件路径原样弹给用户
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(idx, null, 2), 'utf8');
+    try { if (fs.existsSync(INDEX_FILE)) fs.copyFileSync(INDEX_FILE, `${INDEX_FILE}.bak`); } catch { /* 备份失败不影响保存 */ }
+    fs.renameSync(tmp, INDEX_FILE);
+  } catch {
+    throw Object.assign(new Error('记录存不下来：这个位置不能写入。把整个程序文件夹移到「文档」或桌面，再重新打开就好了'), { status: 500 });
+  }
 }
 
 let index = loadIndex();
@@ -57,7 +62,15 @@ let index = loadIndex();
   const i = index.categories.findIndex(c => c.name === '其他');
   if (i >= 0 && i !== index.categories.length - 1) index.categories.push(index.categories.splice(i, 1)[0]);
 }
-saveIndex(index); // 确保首次落盘
+// 免安装版被放进 Program Files、只读 U 盘之类不能写的地方时，首次落盘会抛 EPERM；
+// 以前这一抛就让整个程序启动即退出（图标闪一下没窗口），现在记下原因继续跑，界面提示用户挪位置。
+let bootWarn = '';
+try {
+  saveIndex(index); // 确保首次落盘
+} catch (e) {
+  bootWarn = e.message;
+  console.error('数据目录不可写:', e.message);
+}
 
 function validName(name) {
   return typeof name === 'string' && name.length > 0 && name.length <= 60 && !/[\\/:*?"<>|]/.test(name);
@@ -73,7 +86,7 @@ function registerFile(rawAbs, { category, sub } = {}) {
   let st;
   try { st = fs.statSync(abs); } catch { return null; }
   if (!st.isFile()) return null;
-  if (index.files.some(f => f.absPath.toLowerCase() === abs.toLowerCase())) return null;
+  if (index.files.some(f => String(f.absPath || '').toLowerCase() === abs.toLowerCase())) return null;
   const ext = path.extname(abs).toLowerCase().replace('.', '') || 'unknown';
   let cat = category || EXT_TO_CATEGORY[ext] || '其他';
   if (!index.categories.some(c => c.name === cat)) cat = '其他';
@@ -162,6 +175,7 @@ app.get('/api/state', (req, res) => {
       packaged: !!process.env.DOCS_ROOT,
       root: ROOT,
       files: index.files.length,
+      bootWarn,
     },
   });
 });
@@ -357,11 +371,15 @@ app.get('/api/raw/:id', (req, res) => {
     res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; img-src data:");
   }
   res.type(MIME[f.ext] || 'application/octet-stream');
-  if (MIME[f.ext] && MIME[f.ext].startsWith('text/')) {
-    res.send(fs.readFileSync(p)); // 文本类直接返回内容，前端负责渲染
-  } else {
-    fs.createReadStream(p).pipe(res);
-  }
+  // 一律走流：以前文本类一次 readFileSync 整个文件，登记个几百 MB 的 log 预览一下就把自己撑死
+  const stream = fs.createReadStream(p);
+  // pipe 不转发 error：文件被别的程序独占、或在 existsSync 之后被删掉时，
+  // 没有监听者的 error 就是未捕获异常，整个进程连同窗口一起没
+  stream.on('error', () => {
+    if (res.headersSent) res.destroy();
+    else res.status(500).json({ error: '这个文件现在读不了，可能被别的程序占着' });
+  });
+  stream.pipe(res);
 });
 
 // 系统文件夹选择框：让工具箱的「输出目录」能真的浏览，而不是手打路径
@@ -427,7 +445,10 @@ app.post('/api/open/:id', (req, res) => {
   const p = f.absPath;
   if (!p || !fs.existsSync(p)) return res.status(404).json({ error: '文件已丢失' });
   if (process.platform === 'win32') {
-    execFile('cmd', ['/c', 'start', '', p], () => {});
+    // 不能用 cmd /c start：Node 只给带空格的参数加引号，文件名里的 & 会原样进命令行被 cmd 二次解析，
+    // 别人发来的「报价&计算器&.pdf」点一下就真跑起来了。explorer.exe 不走 shell，没有这层解析。
+    // explorer 永远返回非 0（它只是个转发给桌面的跳板），所以回调里不看 err。
+    execFile('explorer.exe', [p], () => {});
   } else if (process.platform === 'darwin') {
     execFile('open', [p], () => {});
   } else {
